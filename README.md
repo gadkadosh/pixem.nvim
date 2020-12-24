@@ -16,6 +16,7 @@ will search for any valid values on the current line and convert them from px to
 ## How to configure it
 Set `g:pixem_base_font_size` to the base px value for the conversion. (Default: 16)  
 Set `g:pixem_round_digits` to the number of digits values should be rounded to (em values). (Default: 4)
+Set `g:pixem_use_rem` to 1 if you prefer using rem, otherwise use em. (Default: 0)
 ### Mapping
 The plugin does not set a mapping for you. You can add a mapping to your vimrc to your liking, for example:
 ```

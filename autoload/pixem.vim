@@ -1,9 +1,11 @@
 function! s:run_conversion(match) abort
+  let em_str = exists('g:pixem_use_rem') && g:pixem_use_rem ? 'rem' : 'em'
+
   " strip 'px' or 'em'
-  let stripped = matchstr(a:match, '.*\(em\|px\)\@=')
+  let stripped = matchstr(a:match, '.*\(' . em_str . '\|px\)\@=')
   if match(a:match, 'px$') != -1
-    let converted = string(s:pixel2em(stripped)) . 'em'
-  elseif match(a:match, 'em$') != -1
+    let converted = string(s:pixel2em(stripped)) . em_str
+  elseif match(a:match, em_str . '$') != -1
     let converted = string(s:em2pixel(stripped)) .'px'
   endif
 
@@ -32,7 +34,8 @@ endfunction
 function! pixem#pixem() abort
   let line_text = getline('.')
   let line_num = getcurpos()[1]
-  let pattern = '[0-9]*\.\?[0-9]\+\(em\|px\)'
+  let em_str = exists('g:pixem_use_rem') && g:pixem_use_rem ? 'rem' : 'em'
+  let pattern = '[0-9]*\.\?[0-9]\+\('. em_str . '\|px\)'
 
   let converted = substitute(line_text, pattern, '\=s:run_conversion(submatch(0))', 'g')
   call setline(line_num, converted)
