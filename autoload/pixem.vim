@@ -1,36 +1,16 @@
-function! pixem#pixem() abort
-  let line_text = getline('.')
-  let line_num = getcurpos()[1]
-
-  " value includes 'px' or 'em'
-  let value = pixem#find_value(line_text)
-  if value ==# ""
-    return
+function! s:run_conversion(match) abort
+  " strip 'px' or 'em'
+  let stripped = matchstr(a:match, '.*\(em\|px\)\@=')
+  if match(a:match, 'px$') != -1
+    let converted = string(s:pixel2em(stripped)) . 'em'
+  elseif match(a:match, 'em$') != -1
+    let converted = string(s:em2pixel(stripped)) .'px'
   endif
 
-  " num_value strips 'px' or 'em'
-  let num_value = matchstr(value, '.*\(em\|px\)\@=')
-
-  if match(value, 'px$') != -1
-    let converted = pixem#pixel2em(value)
-    let converted_str = string(converted) . 'em'
-  elseif match(value, 'em$') != -1
-    let converted = pixem#em2pixel(value)
-    let converted_str = string(converted) . 'px'
-  endif
-
-  let new_line_text = substitute(line_text, value, converted_str , '')
-  call setline(line_num, new_line_text)
-
+  return converted
 endfunction
 
-" Search for a valid value in the current line
-" TODO: if we have more than one value in the line...
-function! pixem#find_value(line_text) abort
-  return matchstr(a:line_text, '[0-9]*\.\?[0-9]\+\(em\|px\)')
-endfunction
-
-function! pixem#pixel2em(px_value) abort
+function! s:pixel2em(px_value) abort
   let value = str2float(a:px_value)
   let digits = g:pixem_round_digits
   let base_size = g:pixem_base_font_size
@@ -40,10 +20,20 @@ function! pixem#pixel2em(px_value) abort
   if rounded == float2nr(rounded)
     return float2nr(rounded)
   endif
-    return rounded
+  return rounded
 endfunction
 
-function! pixem#em2pixel(em_value) abort
+function! s:em2pixel(em_value) abort
   let value = str2float(a:em_value)
   return float2nr(round(value * g:pixem_base_font_size))
+endfunction
+
+" TODO: add range (visual mode) support
+function! pixem#pixem() abort
+  let line_text = getline('.')
+  let line_num = getcurpos()[1]
+  let pattern = '[0-9]*\.\?[0-9]\+\(em\|px\)'
+
+  let converted = substitute(line_text, pattern, '\=s:run_conversion(submatch(0))', 'g')
+  call setline(line_num, converted)
 endfunction

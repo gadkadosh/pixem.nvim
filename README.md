@@ -12,7 +12,7 @@ Running the Ex command
 ```
 :Pixem
 ```
-will search for the first valid value on the line where the cursor is currently at, and convert it from px to em or vice versa.
+will search for any valid values on the current line and convert them from px to em or vice versa.
 ## How to configure it
 Set `g:pixem_base_font_size` to the base px value for the conversion. (Default: 16)  
 Set `g:pixem_round_digits` to the number of digits values should be rounded to (em values). (Default: 4)
