@@ -5,6 +5,7 @@ local M = {}
 ---@field use_rem boolean Convert px to rem. Set to false to convert px to em
 
 ---@alias pixem.Unit "px"|"em"|"rem"
+---@alias pixem.Substitutions table<pixem.Unit, function>
 
 ---@type pixem.Config
 local config = {
@@ -13,7 +14,7 @@ local config = {
 }
 
 ---@param opts pixem.Config
----@return table
+---@return pixem.Substitutions
 local function get_substitutions(opts)
     return {
         em = function(size) return size * opts.root_font_size .. "px" end,
@@ -25,10 +26,9 @@ local function get_substitutions(opts)
 end
 
 ---@param str any
----@param opts pixem.Config
+---@param substitutions pixem.Substitutions
 ---@return pixem.Unit|nil
-local function find_unit(str, opts)
-    local substitutions = get_substitutions(opts)
+local function find_unit(str, substitutions)
     local found = nil
     for unit, _ in pairs(substitutions) do
         local pattern = "(%d+%.?%d*)" .. unit
@@ -46,11 +46,9 @@ end
 ---Convert px and em
 ---@param str string
 ---@param unit pixem.Unit
----@param opts pixem.Config
+---@param substitutions pixem.Substitutions
 ---@return string
-local function convert(str, unit, opts)
-    local substitutions = get_substitutions(opts)
-
+local function convert(str, unit, substitutions)
     local pattern = "(%d+%.?%d*)" .. unit
     local converted = str:gsub(pattern, substitutions[unit])
     return converted
@@ -61,13 +59,14 @@ end
 M.run_line = function(opts)
     opts = vim.tbl_extend("keep", opts or {}, config)
 
+    local substitutions = get_substitutions(opts)
     local line = vim.api.nvim_get_current_line()
-    local unit = find_unit(line, opts) or find_unit(vim.fn.expand("<cexpr>"), opts)
+    local unit = find_unit(line, substitutions) or find_unit(vim.fn.expand("<cexpr>"), substitutions)
     if not unit then
         print("Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
         return
     end
-    local new_line = convert(line, unit, opts)
+    local new_line = convert(line, unit, substitutions)
     if new_line then
         vim.api.nvim_set_current_line(new_line)
     end
@@ -86,6 +85,7 @@ end
 
 vim.print(vim.fn.expand("<cWord>"))
 
+M._get_substitutions = get_substitutions
 M._find_unit = find_unit
 M._convert = convert
 
