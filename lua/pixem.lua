@@ -1,8 +1,8 @@
 local M = {}
 
----@class Config
----@field root_font_size number
----@field use_rem boolean
+---@class pixem.Config
+---@field root_font_size number Font size for calculating conversions
+---@field use_rem boolean Convert px to rem. Set to false to convert px to em
 local config = {
     root_font_size = 16,
     use_rem = true
@@ -10,7 +10,7 @@ local config = {
 
 ---Convert px and em
 ---@param str string
----@param opts Config
+---@param opts pixem.Config
 ---@return string | nil
 local function convert(str, opts)
     local substitutions = {
@@ -40,7 +40,7 @@ local function convert(str, opts)
 end
 
 ---Execute pixem on the current line
----@param opts? Config
+---@param opts? pixem.Config
 M.run_line = function(opts)
     opts = vim.tbl_extend("keep", opts or {}, config)
 
@@ -52,7 +52,7 @@ M.run_line = function(opts)
 end
 
 ---Setup pixem
----@param opts Config
+---@param opts? pixem.Config
 M.setup = function(opts)
     opts = opts or {}
     config = vim.tbl_extend("force", config, opts)

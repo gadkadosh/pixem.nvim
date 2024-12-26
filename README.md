@@ -1,29 +1,50 @@
 # Pix'em
-This is my first vim plugin. Not terribly useful but a good way to learn some basic Vimscript.
-## What it does
-Converts between px and em values, for example in css stylesheets.
-## How to install it
-If you use vim-plug simply drop this line into your vimrc, or do the equivalent thing for your plugin manager of choice:
+
+Converts between **px** and **em**/**rem** units (for example in CSS files).
+
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Mappings](#mappings)
+
+## Installation
+
+Using [lazy.nvim](https://github.com/folke/lazy.nvim) drop the following into your config, or do the equivalent for your plugin manager of choice:
+
+```lua
+{
+    "gadkadosh/pixem.nvim",
+    config = function()
+        require("pixem").setup()
+    end
+}
 ```
-Plug 'gadkadosh/vim-pixem'
+
+## Configuration
+
+You can pass a custom config to `setup()`.
+
+The default configuration is:
+
+```lua
+config = {
+    ---Font size for calculating conversions
+    root_font_size = 16,
+    ---Convert px to rem. Set to false to convert px to em
+    use_rem = true
+}
 ```
-## How to use it
-Running the Ex command 
+
+## Usage 
+
+Running the vim command `:Pixem` (or the lua function `require("pixem").run_line()`) will search for any valid values on the current line and convert them from px to em/rem or vice versa.
+
+*Note: if mixed units are used conversion will abort.*
+
+## Mappings
+
+The plugin does not set a mapping for you. You can easily add a mapping to your configuration:
+
+``` lua
+vim.keymap.set("<leader>p", require("pixem").run_line())
 ```
-:Pixem
-```
-will search for any valid values on the current line and convert them from px to em or vice versa.
-## How to configure it
-Set `g:pixem_base_font_size` to the base px value for the conversion. (Default: 16)  
-Set `g:pixem_round_digits` to the number of digits values should be rounded to (em values). (Default: 4)
-Set `g:pixem_use_rem` to 1 if you prefer using rem, otherwise use em. (Default: 0)
-### Mapping
-The plugin does not set a mapping for you. You can add a mapping to your vimrc to your liking, for example:
-```
-nnoremap <Leader>p :Pixem<CR>
-```
-## TODO
-1. Automatically convert the value for you instead of suggesting only.
-2. Work out the edge case of having more than one valid value on the current line.
-## Inspiration
-I got the idea from https://youtu.be/jKBOhH6EZRg and his plugin https://github.com/joedbenjamin/pixelemconverter
