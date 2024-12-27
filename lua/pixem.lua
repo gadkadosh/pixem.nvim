@@ -64,6 +64,14 @@ end
 M.run_line = function(opts, lstart, lend)
     opts = vim.tbl_extend("keep", opts or {}, config)
 
+    -- Direct execution of the function, rather than through user command
+    if not lstart then
+        lstart = vim.fn.getpos(".")[2]
+    end
+    if not lend then
+        lend = lstart
+    end
+
     local substitutions = get_substitutions(opts)
     local lines = table.concat(vim.api.nvim_buf_get_lines(0, lstart - 1, lend, false), "\n")
     local unit = find_unit(lines, substitutions) or find_unit(vim.fn.expand("<cexpr>"), substitutions)
