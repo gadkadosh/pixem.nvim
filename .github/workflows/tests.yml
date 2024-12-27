@@ -28,6 +28,5 @@ jobs:
 
       - name: Run tests
         run: |
-          nvim --headless -c "set rtp?"
           nvim --version
           make test
