@@ -83,8 +83,6 @@ M.setup = function(opts)
     end, {})
 end
 
-vim.print(vim.fn.expand("<cWord>"))
-
 ---For internal testing
 M._get_substitutions = get_substitutions
 M._find_unit = find_unit
