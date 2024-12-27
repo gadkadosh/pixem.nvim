@@ -25,7 +25,8 @@ local function get_substitutions(opts)
     }
 end
 
----@param str any
+---Find a unit to convert in a string, returns nil if mixed units are found
+---@param str string
 ---@param substitutions pixem.Substitutions
 ---@return pixem.Unit|nil
 local function find_unit(str, substitutions)
