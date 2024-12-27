@@ -37,6 +37,8 @@ local function find_unit(str, substitutions)
             if not found then
                 found = unit
             else
+                print(
+                    "Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
                 return nil
             end
         end
@@ -57,19 +59,24 @@ end
 
 ---Execute pixem on the current line, fallback to current word
 ---@param opts? pixem.Config
-M.run_line = function(opts)
+---@param lstart number
+---@param lend number
+M.run_line = function(opts, lstart, lend)
     opts = vim.tbl_extend("keep", opts or {}, config)
 
     local substitutions = get_substitutions(opts)
-    local line = vim.api.nvim_get_current_line()
-    local unit = find_unit(line, substitutions) or find_unit(vim.fn.expand("<cexpr>"), substitutions)
+    local lines = table.concat(vim.api.nvim_buf_get_lines(0, lstart - 1, lend, false), "\n")
+    local unit = find_unit(lines, substitutions) or find_unit(vim.fn.expand("<cexpr>"), substitutions)
     if not unit then
-        print("Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
         return
     end
-    local new_line = convert(line, unit, substitutions)
-    if new_line then
-        vim.api.nvim_set_current_line(new_line)
+    local converted = convert(lines, unit, substitutions)
+    if converted then
+        local repl = {}
+        for line in converted:gmatch("([^\n]+)") do
+            table.insert(repl, line)
+        end
+        vim.api.nvim_buf_set_lines(0, lstart - 1, lend, false, repl)
     end
 end
 
@@ -79,9 +86,9 @@ M.setup = function(opts)
     opts = opts or {}
     config = vim.tbl_extend("force", config, opts)
 
-    vim.api.nvim_create_user_command("Pixem", function()
-        M.run_line()
-    end, {})
+    vim.api.nvim_create_user_command("Pixem", function(args)
+        M.run_line(_, args.line1, args.line2)
+    end, { range = true })
 end
 
 ---For internal testing

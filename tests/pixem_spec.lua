@@ -91,4 +91,19 @@ describe("pixem.convert", function()
         local converted = convert("16px 12px 24px", "em", substitutions)
         assert.equals(converted, "16px 12px 24px")
     end)
+
+    it("multiple lines", function()
+        local str = [[
+        padding: 2px 16px;
+        margin: 0 10px;
+        top: 50px;
+            ]]
+        local expected = [[
+        padding: 0.125rem 1rem;
+        margin: 0 0.625rem;
+        top: 3.125rem;
+            ]]
+        local converted = convert(str, "px", substitutions)
+        assert.equals(converted, expected)
+    end)
 end)
