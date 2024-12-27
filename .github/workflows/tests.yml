@@ -28,5 +28,6 @@ jobs:
 
       - name: Run tests
         run: |
+          pwd
           nvim --version
           make test
