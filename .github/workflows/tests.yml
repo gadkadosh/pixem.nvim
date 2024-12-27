@@ -25,11 +25,9 @@ jobs:
       - name: Prepare
         run: |
           git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ../plenary.nvim
-          echo ls && ls
-          echo "ls ../" && ls ../
 
       - name: Run tests
         run: |
-          pwd
+          nvim --headless -c "set rtp?"
           nvim --version
           make test
