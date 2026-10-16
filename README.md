@@ -1,6 +1,8 @@
 # Pix'em
 
-Converts between **px** and **em**/**rem** units (for example in CSS files).
+A Neovim plugin for converting between **px** and **em**/**rem** units, directly in your buffer.
+
+![Demo: running :Pixem converts padding from 8px 16px to 0.5rem 1rem, then back to pixels.](assets/demo.gif)
 
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -22,29 +24,34 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim) drop the following into yo
 
 ## Configuration
 
-You can pass a custom config to `setup()`.
-
-The default configuration is:
+Pass options to `setup()` to customize the conversion. The defaults are:
 
 ```lua
-config = {
-    ---Font size for calculating conversions
+require("pixem").setup({
+    -- Font size in pixels used for conversions
     root_font_size = 16,
-    ---Convert px to rem. Set to false to convert px to em
-    use_rem = true
-}
+    -- Convert px to rem; set to false to convert px to em
+    use_rem = true,
+})
 ```
 
-## Usage 
+Both `em` and `rem` use this fixed font size; the plugin does not calculate font sizes from CSS.
 
-Running the vim command `:Pixem` (or the lua function `require("pixem").run_line()`) will search for any valid values on the current line and convert them from px to em/rem or vice versa.
+## Usage
 
-*Note: if mixed units are used conversion will abort.*
+- `:Pixem` converts values on the current line from px to em/rem or back to px.
+- `:10,20Pixem` converts lines 10–20.
+- `:%Pixem` converts the whole buffer.
+- In Visual mode, select lines and run `:Pixem` to convert that line range.
+
+You can also call `require("pixem").run_line()` from Lua to convert the current line.
+
+If the target contains mixed units, Pix'em tries to use the unit under the cursor to choose which values to convert throughout the target lines. If it cannot identify a single unit, nothing is changed.
 
 ## Mappings
 
 The plugin does not set a mapping for you. You can easily add a mapping to your configuration:
 
-``` lua
-vim.keymap.set("<leader>p", require("pixem").run_line())
+```lua
+vim.keymap.set("n", "<leader>p", require("pixem").run_line, { desc = "Convert px ↔ em/rem" })
 ```
