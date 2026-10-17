@@ -5,6 +5,51 @@ local opts = {
     use_rem = true
 }
 
+describe("Pixem command", function()
+    local buffer
+
+    before_each(function()
+        buffer = vim.api.nvim_create_buf(false, true)
+        vim.api.nvim_set_current_buf(buffer)
+        require("pixem").setup(opts)
+    end)
+
+    after_each(function()
+        vim.api.nvim_buf_delete(buffer, { force = true })
+        vim.api.nvim_del_user_command("Pixem")
+    end)
+
+    it("preserves blank lines and only converts the requested range", function()
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, {
+            "padding: 48px;",
+            "",
+            "padding: 16px;",
+            "",
+            "",
+            "   ",
+            "margin: 32px;",
+            "",
+            "",
+            "margin: 64px;",
+        })
+
+        vim.cmd("2,9Pixem")
+
+        assert.are.same({
+            "padding: 48px;",
+            "",
+            "padding: 1rem;",
+            "",
+            "",
+            "   ",
+            "margin: 2rem;",
+            "",
+            "",
+            "margin: 64px;",
+        }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+    end)
+end)
+
 describe("pixem.find_unit", function()
     local find_unit = require("pixem")._find_unit
 

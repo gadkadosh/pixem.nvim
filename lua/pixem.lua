@@ -80,10 +80,7 @@ M.run_line = function(opts, lstart, lend)
     end
     local converted = convert(lines, unit, substitutions)
     if converted then
-        local repl = {}
-        for line in converted:gmatch("([^\n]+)") do
-            table.insert(repl, line)
-        end
+        local repl = vim.split(converted, "\n", { plain = true, trimempty = false })
         vim.api.nvim_buf_set_lines(0, lstart - 1, lend, false, repl)
     end
 end
