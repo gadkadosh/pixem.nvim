@@ -91,21 +91,21 @@ M.run_line = function(opts, lstart, lend)
     lend = lend or lstart
 
     -- Check before starting an operator so a no-op preserves the previous dot action.
-    local replacement = get_replacement(opts, lstart, lend)
-    if not replacement then
+    local pending_replacement = get_replacement(opts, lstart, lend)
+    if not pending_replacement then
         return
     end
 
     local line_count = lend - lstart + 1
     M._repeat = function()
-        if not replacement then
+        if not pending_replacement then
             lstart = vim.fn.line(".")
             lend = math.min(lstart + line_count - 1, vim.api.nvim_buf_line_count(0))
-            replacement = get_replacement(opts, lstart, lend)
+            pending_replacement = get_replacement(opts, lstart, lend)
         end
-        if replacement then
-            vim.api.nvim_buf_set_lines(0, lstart - 1, lend, false, replacement)
-            replacement = nil
+        if pending_replacement then
+            vim.api.nvim_buf_set_lines(0, lstart - 1, lend, false, pending_replacement)
+            pending_replacement = nil
         end
     end
     vim.go.operatorfunc = "v:lua.require'pixem'._repeat"
