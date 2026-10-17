@@ -74,12 +74,15 @@ M.run_line = function(opts, lstart, lend)
     local substitutions = get_substitutions(opts)
     local lines = table.concat(vim.api.nvim_buf_get_lines(0, lstart - 1, lend, false), "\n")
     local unit, mixed = find_unit(lines, substitutions)
-    unit = unit or find_unit(vim.fn.expand("<cexpr>"), substitutions)
-    if not unit then
-        if mixed then
+    if mixed then
+        unit = find_unit(vim.fn.expand("<cexpr>"), substitutions)
+        if not unit then
             print(
                 "Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
+            return
         end
+    end
+    if not unit then
         return
     end
     local converted = convert(lines, unit, substitutions)
