@@ -8,6 +8,7 @@ A Neovim plugin for converting between **px** and **em**/**rem** units, directly
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Mappings](#mappings)
+- [Testing](#testing)
 
 ## Installation
 
@@ -54,4 +55,18 @@ The plugin does not set a mapping for you. You can easily add a mapping to your 
 
 ```lua
 vim.keymap.set("n", "<leader>p", require("pixem").run_line, { desc = "Convert px ↔ em/rem" })
+```
+
+## Testing
+
+With Neovim and Make installed, run this once from the repository root to install the test dependency in a sibling directory:
+
+```sh
+git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ../plenary.nvim
+```
+
+Then run the tests from the repository root:
+
+```sh
+make test
 ```

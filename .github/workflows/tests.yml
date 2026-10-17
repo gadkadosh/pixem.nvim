@@ -2,17 +2,22 @@ name: Tests
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   unit_tests:
-    name: unit tests
-    runs-on: ${{ matrix.os }}
+    name: unit tests (${{ matrix.rev }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
-        rev: [nightly]
-        include:
-          - os: ubuntu-22.04
+        rev: [stable, nightly]
 
     steps:
       - uses: actions/checkout@v4
