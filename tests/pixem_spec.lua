@@ -151,6 +151,123 @@ describe("Pixem command", function()
             vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
     end)
 
+    describe("dot repeat", function()
+        local operatorfunc
+
+        local function keys(input)
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(input, true, false, true), "xt", false)
+        end
+
+        before_each(function()
+            operatorfunc = vim.go.operatorfunc
+        end)
+
+        after_each(function()
+            vim.go.operatorfunc = operatorfunc
+        end)
+
+        it("repeats the command at the cursor and toggles back on the same line", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "padding: 16px;", "margin: 32px;" })
+
+            keys(":Pixem<CR>j.")
+
+            assert.are.same({ "padding: 1rem;", "margin: 2rem;" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+
+            keys(".")
+
+            assert.are.same({ "padding: 1rem;", "margin: 32px;" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+
+        it("works through a Lua mapping", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "16px", "32px" })
+            vim.keymap.set("n", "<F5>", require("pixem").run_line)
+
+            keys("<F5>j.")
+            vim.keymap.del("n", "<F5>")
+
+            assert.are.same({ "1rem", "2rem" }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+
+        it("remembers range length, clips at EOF, and keeps the original length afterward", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "16px", "32px", "48px", "64px", "80px" })
+            vim.api.nvim_win_set_cursor(0, { 3, 0 })
+
+            keys(":1,2Pixem<CR>.")
+
+            assert.are.same({ "1rem", "2rem", "3rem", "4rem", "80px" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+
+            keys("G.")
+
+            assert.are.same({ "1rem", "2rem", "3rem", "4rem", "5rem" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+
+            keys("gg.")
+
+            assert.are.same({ "16px", "32px", "3rem", "4rem", "5rem" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+
+        it("uses the unit under the new cursor when repeating mixed units", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "16px", "padding: 32px 1rem;" })
+            vim.cmd("Pixem")
+            vim.api.nvim_win_set_cursor(0, { 2, 15 })
+
+            keys(".")
+
+            assert.are.same({ "1rem", "padding: 32px 16px;" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+
+        it("preserves per-call configuration", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "20px", "30px" })
+
+            require("pixem").run_line({ root_font_size = 10, use_rem = false })
+            keys("j.")
+
+            assert.are.same({ "2em", "3em" }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+
+        for _, line in ipairs({ "padding: auto;", "padding: 16px 1rem;" }) do
+            it("preserves the previous native repeat when nothing converts: " .. line, function()
+                vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { line, "test" })
+                keys("A!<Esc>:Pixem<CR>j.")
+
+                assert.are.same({ line .. "!", "test!" }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+            end)
+        end
+
+        it("preserves the previous Pixem repeat after a no-op with a different range", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "16px", "32px", "auto", "auto", "48px", "64px" })
+            keys(":Pixem<CR>:3,4Pixem<CR>5G.")
+
+            assert.are.same({ "1rem", "32px", "auto", "auto", "3rem", "64px" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+
+        it("allows a normal edit to replace Pixem as the dot action", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "16px", "32px" })
+            keys(":Pixem<CR>A!<Esc>j.")
+
+            assert.are.same({ "1rem!", "32px!" }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+
+        it("undoes a repeated range conversion in one step", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "16px", "32px", "48px", "64px" })
+            keys(":1,2Pixem<CR>3G.")
+
+            assert.are.same({ "1rem", "2rem", "3rem", "4rem" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+
+            keys("u")
+
+            assert.are.same({ "1rem", "2rem", "48px", "64px" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+    end)
+
     it("preserves blank lines and only converts the requested range", function()
         vim.api.nvim_buf_set_lines(buffer, 0, -1, false, {
             "padding: 48px;",

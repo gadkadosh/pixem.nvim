@@ -47,6 +47,8 @@ Both `em` and `rem` use this fixed font size; the plugin does not calculate font
 
 You can also call `require("pixem").run_line()` from Lua to convert the current line.
 
+Supports `.` repeat.
+
 If the target contains mixed units, Pix'em tries to use the unit under the cursor to choose which values to convert throughout the target lines. If it cannot identify a single unit, nothing is changed.
 
 ## Mappings
