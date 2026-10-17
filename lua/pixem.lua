@@ -33,7 +33,7 @@ end
 local function find_unit(str, substitutions)
     local found = nil
     for unit, _ in pairs(substitutions) do
-        local pattern = "(%d+%.?%d*)" .. unit
+        local pattern = "(%d*%.?%d+)" .. unit
         if str:find(pattern) then
             if not found then
                 found = unit
@@ -51,7 +51,7 @@ end
 ---@param substitutions pixem.Substitutions
 ---@return string
 local function convert(str, unit, substitutions)
-    local pattern = "(%d+%.?%d*)" .. unit
+    local pattern = "(%d*%.?%d+)" .. unit
     local converted = str:gsub(pattern, substitutions[unit])
     return converted
 end
@@ -66,6 +66,7 @@ local function get_replacement(opts, lstart, lend)
     local unit, mixed = find_unit(lines, substitutions)
     if mixed then
         unit = find_unit(vim.fn.expand("<cexpr>"), substitutions)
+            or find_unit(vim.fn.expand("<cword>"), substitutions)
         if not unit then
             print(
                 "Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
