@@ -29,6 +29,7 @@ end
 ---@param str string
 ---@param substitutions pixem.Substitutions
 ---@return pixem.Unit|nil
+---@return boolean mixed
 local function find_unit(str, substitutions)
     local found = nil
     for unit, _ in pairs(substitutions) do
@@ -37,13 +38,11 @@ local function find_unit(str, substitutions)
             if not found then
                 found = unit
             else
-                print(
-                    "Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
-                return nil
+                return nil, true
             end
         end
     end
-    return found
+    return found, false
 end
 
 ---Convert px and em
@@ -74,8 +73,13 @@ M.run_line = function(opts, lstart, lend)
 
     local substitutions = get_substitutions(opts)
     local lines = table.concat(vim.api.nvim_buf_get_lines(0, lstart - 1, lend, false), "\n")
-    local unit = find_unit(lines, substitutions) or find_unit(vim.fn.expand("<cexpr>"), substitutions)
+    local unit, mixed = find_unit(lines, substitutions)
+    unit = unit or find_unit(vim.fn.expand("<cexpr>"), substitutions)
     if not unit then
+        if mixed then
+            print(
+                "Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
+        end
         return
     end
     local converted = convert(lines, unit, substitutions)

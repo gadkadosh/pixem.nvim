@@ -1,3 +1,4 @@
+local stub = require("luassert.stub")
 local get_substitutions = require("pixem")._get_substitutions
 
 local opts = {
@@ -7,14 +8,17 @@ local opts = {
 
 describe("Pixem command", function()
     local buffer
+    local print_stub
 
     before_each(function()
         buffer = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_set_current_buf(buffer)
         require("pixem").setup(opts)
+        print_stub = stub(_G, "print")
     end)
 
     after_each(function()
+        print_stub:revert()
         vim.api.nvim_buf_delete(buffer, { force = true })
         vim.api.nvim_del_user_command("Pixem")
     end)
@@ -52,6 +56,7 @@ describe("Pixem command", function()
 
             assert.are.same({ "body {", "  " .. case[2], "}" },
                 vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+            assert.stub(print_stub).was_not_called()
         end)
     end
 
@@ -73,6 +78,7 @@ describe("Pixem command", function()
             vim.cmd("Pixem")
 
             assert.are.same({ case[3] }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+            assert.stub(print_stub).was_not_called()
         end)
     end
 
@@ -91,9 +97,10 @@ describe("Pixem command", function()
             "margin: 32px 12px 0.813em;",
             "top: 48px;",
         }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        assert.stub(print_stub).was_not_called()
     end)
 
-    it("leaves mixed units unchanged when the cursor is not on a unit", function()
+    it("warns once and leaves mixed units unchanged when the cursor is not on a unit", function()
         local line = "padding: 16px 1rem 1em;"
         vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { line })
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
@@ -101,6 +108,9 @@ describe("Pixem command", function()
         vim.cmd("Pixem")
 
         assert.are.same({ line }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        assert.stub(print_stub).was_called(1)
+        assert.stub(print_stub).was_called_with(
+            "Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
     end)
 
     it("converts only the current line when called directly from Lua", function()
@@ -111,6 +121,7 @@ describe("Pixem command", function()
 
         assert.are.same({ "padding: 16px;", "margin: 2rem;" },
             vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        assert.stub(print_stub).was_not_called()
     end)
 
     it("preserves blank lines and only converts the requested range", function()
@@ -141,6 +152,7 @@ describe("Pixem command", function()
             "",
             "margin: 64px;",
         }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        assert.stub(print_stub).was_not_called()
     end)
 end)
 
