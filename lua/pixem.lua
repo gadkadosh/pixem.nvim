@@ -56,21 +56,11 @@ local function convert(str, unit, substitutions)
     return converted
 end
 
----Execute pixem on the current line, fallback to current word
----@param opts? pixem.Config
+---@param opts pixem.Config
 ---@param lstart number
 ---@param lend number
-M.run_line = function(opts, lstart, lend)
-    opts = vim.tbl_extend("keep", opts or {}, config)
-
-    -- Direct execution of the function, rather than through user command
-    if not lstart then
-        lstart = vim.fn.getpos(".")[2]
-    end
-    if not lend then
-        lend = lstart
-    end
-
+---@return string[]|nil
+local function get_replacement(opts, lstart, lend)
     local substitutions = get_substitutions(opts)
     local lines = table.concat(vim.api.nvim_buf_get_lines(0, lstart - 1, lend, false), "\n")
     local unit, mixed = find_unit(lines, substitutions)
@@ -86,10 +76,40 @@ M.run_line = function(opts, lstart, lend)
         return
     end
     local converted = convert(lines, unit, substitutions)
-    if converted then
-        local repl = vim.split(converted, "\n", { plain = true, trimempty = false })
-        vim.api.nvim_buf_set_lines(0, lstart - 1, lend, false, repl)
+    if converted ~= lines then
+        return vim.split(converted, "\n", { plain = true, trimempty = false })
     end
+end
+
+---Execute pixem on the current line or range, fallback to the cursor's unit
+---@param opts? pixem.Config
+---@param lstart? number
+---@param lend? number
+M.run_line = function(opts, lstart, lend)
+    opts = vim.tbl_extend("keep", opts or {}, config)
+    lstart = lstart or vim.fn.line(".")
+    lend = lend or lstart
+
+    -- Check before starting an operator so a no-op preserves the previous dot action.
+    local replacement = get_replacement(opts, lstart, lend)
+    if not replacement then
+        return
+    end
+
+    local line_count = lend - lstart + 1
+    M._repeat = function()
+        if not replacement then
+            lstart = vim.fn.line(".")
+            lend = math.min(lstart + line_count - 1, vim.api.nvim_buf_line_count(0))
+            replacement = get_replacement(opts, lstart, lend)
+        end
+        if replacement then
+            vim.api.nvim_buf_set_lines(0, lstart - 1, lend, false, replacement)
+            replacement = nil
+        end
+    end
+    vim.go.operatorfunc = "v:lua.require'pixem'._repeat"
+    vim.cmd("normal! g@l")
 end
 
 ---Setup pixem
@@ -99,7 +119,7 @@ M.setup = function(opts)
     config = vim.tbl_extend("force", config, opts)
 
     vim.api.nvim_create_user_command("Pixem", function(args)
-        M.run_line(_, args.line1, args.line2)
+        M.run_line(nil, args.line1, args.line2)
     end, { range = true })
 end
 
