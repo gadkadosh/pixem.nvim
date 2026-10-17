@@ -19,6 +19,100 @@ describe("Pixem command", function()
         vim.api.nvim_del_user_command("Pixem")
     end)
 
+    -- These cases replace the manual test_file.css playground.
+    for _, case in ipairs({
+        { "padding: 1.4; 14", "padding: 1.4; 14" },
+        { "font-size: 14px", "font-size: 0.875rem" },
+        { "font-size: 14px;", "font-size: 0.875rem;" },
+        { "font-size:13px;", "font-size:0.8125rem;" },
+        { "font-size:208px;", "font-size:13rem;" },
+        { "font-size:21px;", "font-size:1.3125rem;" },
+        { "font-size: 5px;", "font-size: 0.3125rem;" },
+        { "font-size:0.813em;", "font-size:13.008px;" },
+        { "font-size: 0.75em;", "font-size: 12px;" },
+        { "font-size: 0.75rem;", "font-size: 12px;" },
+        { "font-size: 11px;", "font-size: 0.6875rem;" },
+        { "font-size: 10px;", "font-size: 0.625rem;" },
+        { "padding: 20em 1.41233em; 14", "padding: 320px 22.59728px; 14" },
+        { "padding: 20rem 1.41233rem; 14", "padding: 320px 22.59728px; 14" },
+        { "padding: 1.67px; 14", "padding: 0.104375rem; 14" },
+        { "padding: 1.375em; 14", "padding: 22px; 14" },
+        { "padding:     22px; 14", "padding:     1.375rem; 14" },
+        { "padding:22px 22px;", "padding:1.375rem 1.375rem;" },
+        { "padding:22px22px 22px 22px;", "padding:1.375rem1.375rem 1.375rem 1.375rem;" },
+        { "padding:16px 16px 16px 16px;", "padding:1rem 1rem 1rem 1rem;" },
+        { "padding:12px 16px 16px 16px;", "padding:0.75rem 1rem 1rem 1rem;" },
+        { "padem: 4;", "padem: 4;" },
+    }) do
+        it("handles CSS on the current line: " .. case[1], function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "body {", "  " .. case[1], "}" })
+            vim.api.nvim_win_set_cursor(0, { 2, 0 })
+
+            vim.cmd("Pixem")
+
+            assert.are.same({ "body {", "  " .. case[2], "}" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+    end
+
+    for _, case in ipairs({
+        { "padding: 32px 1.41233em; 14", "32px", "padding: 2rem 1.41233em; 14" },
+        { "padding: 32px 1.41233em; 14", "1.41233em", "padding: 32px 22.59728px; 14" },
+        { "padding:1em 16px 16px 16px;", "16px", "padding:1em 1rem 1rem 1rem;" },
+        { "padding:1em 1px 1px 1px;", "1em", "padding:16px 1px 1px 1px;" },
+        { "padding: 16px 1rem 1em;", "16px", "padding: 1rem 1rem 1em;" },
+        { "padding: 16px 1rem 1em;", "1rem", "padding: 16px 16px 1em;" },
+        { "padding: 16px 1rem 1em;", "1em", "padding: 16px 1rem 16px;" },
+    }) do
+        it("selects " .. case[2] .. " under the cursor in " .. case[1], function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { case[1] })
+            -- Place the cursor on the unit suffix, including for fractional values.
+            local column = assert(case[1]:find(case[2], 1, true)) + #case[2] - 2
+            vim.api.nvim_win_set_cursor(0, { 1, column })
+
+            vim.cmd("Pixem")
+
+            assert.are.same({ case[3] }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        end)
+    end
+
+    it("uses the cursor's unit throughout the requested range", function()
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, {
+            "padding: 16px 1rem 1em;",
+            "margin: 32px 0.75rem 0.813em;",
+            "top: 48px;",
+        })
+        vim.api.nvim_win_set_cursor(0, { 1, 14 })
+
+        vim.cmd("1,2Pixem")
+
+        assert.are.same({
+            "padding: 16px 16px 1em;",
+            "margin: 32px 12px 0.813em;",
+            "top: 48px;",
+        }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+    end)
+
+    it("leaves mixed units unchanged when the cursor is not on a unit", function()
+        local line = "padding: 16px 1rem 1em;"
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { line })
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+        vim.cmd("Pixem")
+
+        assert.are.same({ line }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+    end)
+
+    it("converts only the current line when called directly from Lua", function()
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "padding: 16px;", "margin: 32px;" })
+        vim.api.nvim_win_set_cursor(0, { 2, 0 })
+
+        require("pixem").run_line()
+
+        assert.are.same({ "padding: 16px;", "margin: 2rem;" },
+            vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+    end)
+
     it("preserves blank lines and only converts the requested range", function()
         vim.api.nvim_buf_set_lines(buffer, 0, -1, false, {
             "padding: 48px;",
