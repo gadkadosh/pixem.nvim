@@ -1,3 +1,4 @@
+local stub = require("luassert.stub")
 local get_substitutions = require("pixem")._get_substitutions
 
 local opts = {
@@ -93,14 +94,51 @@ describe("Pixem command", function()
         }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
     end)
 
-    it("leaves mixed units unchanged when the cursor is not on a unit", function()
-        local line = "padding: 16px 1rem 1em;"
-        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { line })
-        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    describe("messages", function()
+        local print_stub
 
-        vim.cmd("Pixem")
+        before_each(function()
+            print_stub = stub(_G, "print")
+        end)
 
-        assert.are.same({ line }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+        after_each(function()
+            print_stub:revert()
+        end)
+
+        it("does not warn when cursor selection resolves mixed units", function()
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { "padding: 16px 1rem 1em;" })
+            vim.api.nvim_win_set_cursor(0, { 1, 14 })
+
+            vim.cmd("Pixem")
+
+            assert.are.same({ "padding: 16px 16px 1em;" },
+                vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+            assert.stub(print_stub).was_not_called()
+        end)
+
+        it("warns once and leaves unresolved mixed units unchanged", function()
+            local line = "padding: 16px 1rem 1em;"
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { line })
+            vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+            vim.cmd("Pixem")
+
+            assert.are.same({ line }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+            assert.stub(print_stub).was_called(1)
+            assert.stub(print_stub).was_called_with(
+                "Pixem: mixed units detected. Place the cursor on the specific part to be converted and try again.")
+        end)
+
+        it("leaves unitless input unchanged without warning", function()
+            local line = "padding: 1.4; 14"
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { line })
+            vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+            vim.cmd("Pixem")
+
+            assert.are.same({ line }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+            assert.stub(print_stub).was_not_called()
+        end)
     end)
 
     it("converts only the current line when called directly from Lua", function()
