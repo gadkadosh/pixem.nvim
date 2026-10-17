@@ -32,6 +32,13 @@ describe("Pixem command", function()
         { "font-size:0.813em;", "font-size:13.008px;" },
         { "font-size: 0.75em;", "font-size: 12px;" },
         { "font-size: 0.75rem;", "font-size: 12px;" },
+        { "font-size: .5rem;", "font-size: 8px;" },
+        { "font-size: .5em;", "font-size: 8px;" },
+        { "font-size: .5px;", "font-size: 0.03125rem;" },
+        { "margin: -.5rem;", "margin: -8px;" },
+        { "margin: -.5em;", "margin: -8px;" },
+        { "margin: -.5px;", "margin: -0.03125rem;" },
+        { "padding: .05rem .25rem .0rem;", "padding: 0.8px 4px 0px;" },
         { "font-size: 11px;", "font-size: 0.6875rem;" },
         { "font-size: 10px;", "font-size: 0.625rem;" },
         { "padding: 20em 1.41233em; 14", "padding: 320px 22.59728px; 14" },
@@ -64,6 +71,9 @@ describe("Pixem command", function()
         { "padding: 16px 1rem 1em;", "16px", "padding: 1rem 1rem 1em;" },
         { "padding: 16px 1rem 1em;", "1rem", "padding: 16px 16px 1em;" },
         { "padding: 16px 1rem 1em;", "1em", "padding: 16px 1rem 16px;" },
+        { "padding: 16px .5rem .5em;", ".5rem", "padding: 16px 8px .5em;" },
+        { "padding: .5px .5rem .5em;", ".5px", "padding: 0.03125rem .5rem .5em;" },
+        { "padding: 16px .5rem .5em;", ".5em", "padding: 16px .5rem 8px;" },
     }) do
         it("selects " .. case[2] .. " under the cursor in " .. case[1], function()
             vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { case[1] })
@@ -76,6 +86,17 @@ describe("Pixem command", function()
             assert.are.same({ case[3] }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
         end)
     end
+
+    it("selects a fractional unit with the cursor on the decimal point", function()
+        local line = "padding: 0.5rem 16px;"
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, { line })
+        local column = assert(line:find("0.5rem", 1, true))
+        vim.api.nvim_win_set_cursor(0, { 1, column })
+
+        vim.cmd("Pixem")
+
+        assert.are.same({ "padding: 8px 16px;" }, vim.api.nvim_buf_get_lines(buffer, 0, -1, false))
+    end)
 
     it("uses the cursor's unit throughout the requested range", function()
         vim.api.nvim_buf_set_lines(buffer, 0, -1, false, {
